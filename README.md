@@ -7,6 +7,31 @@
 
 A modern, full-featured AI chat application built with React, TypeScript, and integrated with Supabase for authentication and database, Stripe for payments, and Gemini AI for responses.
 
+## About Me
+
+**Name:** Waqar Haider
+
+**University:** The University Of Faisalabad
+
+**Fellowship Track:** Track 2 NLP & AI Agents Visibility Bots Innovation Lab AI Summer Internship
+
+**Career Goals:** To become a leading AI engineer specializing in NLP and intelligent agents, building innovative solutions that bridge human-computer interaction.
+
+**Technical Skills:**
+- React & TypeScript
+- Node.js & Express
+- Supabase & PostgreSQL
+- Stripe Integration
+- Google Gemini API
+- AI/ML Fundamentals
+- Full-stack Development
+
+**Learning Goals:**
+- Master advanced NLP techniques
+- Build production-grade AI agents
+- Develop scalable backend systems
+- Enhance UI/UX design skills
+
 ## Features
 
 - **User Authentication**: Secure login/signup with Supabase Auth

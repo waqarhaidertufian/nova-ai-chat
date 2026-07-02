@@ -11,7 +11,10 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "@auth/core": "^0.41.2",
+    "@auth/express": "^0.12.2",
     "@google/genai": "^2.4.0",
+    "@supabase/supabase-js": "^2.110.0",
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
     "dotenv": "^17.2.3",
@@ -21,6 +24,7 @@
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "react-markdown": "^10.1.0",
+    "stripe": "^22.3.0",
     "vite": "^6.2.3"
   },
   "devDependencies": {

@@ -8,7 +8,9 @@ import {
   Plus,
   Search,
   Settings,
-  SquarePen
+  SquarePen,
+  LogIn,
+  LogOut
 } from "lucide-react";
 import { ChatSession } from "../types";
 import { motion } from "motion/react";
@@ -26,6 +28,9 @@ interface SidebarProps {
   onToggleFavorite: (id: string, e: React.MouseEvent) => void;
   onOpenSettings: () => void;
   onOpenExport: () => void;
+  user?: any;
+  onOpenAuth?: () => void;
+  onLogout?: () => void;
   userEmail?: string;
 }
 
@@ -81,9 +86,14 @@ export default function Sidebar({
   onNewChat,
   onSelectSession,
   onOpenSettings,
+  user,
+  onOpenAuth,
+  onLogout,
   userEmail = "Waqar Haider"
 }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(true);
+
+  const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || userEmail;
 
   const recents = sessions.length > 0
     ? sessions.slice(0, 10).map(session => ({ id: session.id, title: session.title }))
@@ -205,21 +215,58 @@ export default function Sidebar({
             >
               <Settings size={18} />
             </button>
-            <div className="profile-avatar grid h-8 w-8 place-items-center rounded-full text-xs font-semibold text-white shadow-sm">W</div>
+            {user ? (
+              <button
+                onClick={onLogout}
+                className="grid h-9 w-9 place-items-center rounded-full transition hover:bg-slate-100 dark:hover:bg-slate-900"
+                title="Logout"
+              >
+                <LogOut size={18} />
+              </button>
+            ) : (
+              <button
+                onClick={onOpenAuth}
+                className="grid h-9 w-9 place-items-center rounded-full transition hover:bg-slate-100 dark:hover:bg-slate-900"
+                title="Login"
+              >
+                <LogIn size={18} />
+              </button>
+            )}
           </>
         ) : (
           <>
             <div className="flex min-w-0 items-center gap-2.5">
-              <div className="profile-avatar grid h-8 w-8 shrink-0 place-items-center rounded-full text-xs font-semibold text-white shadow-sm">W</div>
-              <span className="truncate text-[16px] font-medium">{userEmail}</span>
+              <div className="profile-avatar grid h-8 w-8 shrink-0 place-items-center rounded-full text-xs font-semibold text-white shadow-sm">
+                {displayName.charAt(0).toUpperCase()}
+              </div>
+              <span className="truncate text-[16px] font-medium">{displayName}</span>
             </div>
-            <button
-              onClick={onOpenSettings}
-              className="grid h-8 w-8 shrink-0 place-items-center rounded-full transition hover:bg-slate-100 dark:hover:bg-slate-900"
-              title="Settings"
-            >
-              <Settings size={18} />
-            </button>
+            <div className="flex items-center gap-2">
+              {user ? (
+                <button
+                  onClick={onLogout}
+                  className="grid h-8 w-8 shrink-0 place-items-center rounded-full transition hover:bg-slate-100 dark:hover:bg-slate-900"
+                  title="Logout"
+                >
+                  <LogOut size={18} />
+                </button>
+              ) : (
+                <button
+                  onClick={onOpenAuth}
+                  className="grid h-8 w-8 shrink-0 place-items-center rounded-full transition hover:bg-slate-100 dark:hover:bg-slate-900"
+                  title="Login"
+                >
+                  <LogIn size={18} />
+                </button>
+              )}
+              <button
+                onClick={onOpenSettings}
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-full transition hover:bg-slate-100 dark:hover:bg-slate-900"
+                title="Settings"
+              >
+                <Settings size={18} />
+              </button>
+            </div>
           </>
         )}
       </div>

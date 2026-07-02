@@ -3,9 +3,13 @@ import Sidebar from "./components/Sidebar";
 import HomeView from "./components/HomeView";
 import ChatView from "./components/ChatView";
 import SettingsModal from "./components/SettingsModal";
+import AuthModal from "./components/AuthModal";
+import PricingModal from "./components/PricingModal";
 import { ChatSession, Message, ModelId, FileAttachment } from "./types";
-import { RefreshCw, Sparkles, X, AlertCircle, FileText, Check, Download, Layers } from "lucide-react";
+import { RefreshCw, Sparkles, X, AlertCircle, FileText, Check, Download, Layers, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import { supabase } from "./lib/supabase";
+import { createCheckoutSession } from "./lib/stripe";
 
 const INITIAL_SYSTEM_PROMPT = "You are Nova, a premium AI assistant with magnificent reasoning, coding, and writing abilities. Respond precisely with elegant markdown structures.";
 
@@ -77,6 +81,48 @@ export default function App() {
   const [isListening, setIsListening] = useState(false);
   const [speechRecognition, setSpeechRecognition] = useState<any>(null);
   const [errorMessage, setErrorMessage] = useState<{ type: string; details: string } | null>(null);
+
+  // Authentication
+  const [user, setUser] = useState<any>(null);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isPricingOpen, setIsPricingOpen] = useState(false);
+
+  // Check for existing session on mount
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+  };
+
+  const handleSelectPlan = async (planId: string) => {
+    if (!user) {
+      setIsPricingOpen(false);
+      setIsAuthOpen(true);
+      return;
+    }
+
+    try {
+      const session = await createCheckoutSession(user.email, planId);
+      if (session && session.url) {
+        window.location.href = session.url;
+      }
+    } catch (error) {
+      console.error('Error creating checkout session:', error);
+    }
+  };
 
   // Synchronize Sessions with localStorage
   useEffect(() => {
@@ -484,7 +530,7 @@ export default function App() {
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-gray-50/20 dark:bg-slate-950 font-sans transition-colors duration-300">
       {/* Sidebar navigation */}
-      <Sidebar 
+      <Sidebar
         sessions={sessions}
         activeSessionId={activeSessionId}
         isDarkMode={isDarkMode}
@@ -497,13 +543,17 @@ export default function App() {
         onToggleFavorite={handleToggleFavorite}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onOpenExport={() => setIsExportOpen(true)}
+        user={user}
+        onOpenAuth={() => setIsAuthOpen(true)}
+        onLogout={handleLogout}
       />
 
       {/* Main Core Stage */}
       <div className="flex-1 h-screen flex flex-col overflow-hidden relative" id="stage-panel">
         <div className="pointer-events-none absolute right-5 top-[18px] z-30 flex items-center gap-3">
           <button
-            className="pointer-events-auto flex h-10 items-center gap-2 rounded-full border border-sky-200/80 bg-white/80 px-4 text-[16px] font-semibold text-[#064b78] shadow-[0_8px_24px_rgba(14,116,144,0.14)] backdrop-blur-md transition hover:bg-sky-50 hover:shadow-[0_10px_28px_rgba(14,116,144,0.2)]"
+            onClick={() => setIsPricingOpen(true)}
+            className="pointer-events-auto flex h-10 items-center gap-2 rounded-full border border-sky-200/80 bg-white/80 px-4 text-[16px] font-semibold text-[#064b78] shadow-[0_8px_24px_rgba(14,116,144,0.14)] backdrop-blur-md transition hover:bg-sky-50 hover:shadow-[0_10px_28px_rgba(14,116,144,0.2)] cursor-pointer"
             title="Upgrade"
           >
             <NovaMark className="h-5 w-5 shrink-0" />
@@ -689,6 +739,28 @@ export default function App() {
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* Auth Modal */}
+      <AnimatePresence>
+        {isAuthOpen && (
+          <AuthModal
+            isOpen={isAuthOpen}
+            onClose={() => setIsAuthOpen(false)}
+            onAuthSuccess={(userData) => setUser(userData)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Pricing Modal */}
+      <AnimatePresence>
+        {isPricingOpen && (
+          <PricingModal
+            isOpen={isPricingOpen}
+            onClose={() => setIsPricingOpen(false)}
+            onSelectPlan={handleSelectPlan}
+          />
         )}
       </AnimatePresence>
     </div>

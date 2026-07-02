@@ -1,0 +1,6 @@
+{
+  "name": "AI Workspace",
+  "description": "Premium AI Workspace for Chat, Document Summarization, Speech-to-Text, Image Analysis and Prompt Engineering.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

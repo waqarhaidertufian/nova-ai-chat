@@ -31,6 +31,10 @@ export interface ChatStats {
   outputTokens?: number;
   totalTokens?: number;
   totalCost?: number;
+  provider?: string;
+  model?: string;
+  fallbackUsed?: boolean;
+  attemptedProviders?: string[];
   isSimulated?: boolean;
   simulationReason?: string;
 }

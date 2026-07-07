@@ -46,7 +46,7 @@ export const PRICING_PLANS = {
 export async function createCheckoutSession(userId: string, priceId: string) {
   if (!stripe) throw new Error('Stripe not configured');
 
-  const { data: subscription } = await stripe.checkout.sessions.create({
+  const subscription = await stripe.checkout.sessions.create({
     mode: 'subscription',
     payment_method_types: ['card'],
     line_items: [

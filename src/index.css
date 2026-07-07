@@ -20,27 +20,12 @@
     border: 1px solid rgba(255, 255, 255, 0.3);
   }
 
-  .dark .glass-panel {
-    background: rgba(15, 23, 42, 0.4);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-  }
-
   .glass-panel-elevated {
     background: rgba(255, 255, 255, 0.65);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.4);
     box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.04);
-  }
-
-  .dark .glass-panel-elevated {
-    background: rgba(15, 23, 42, 0.7);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
   }
 
   /* Custom Scrollbar */
@@ -56,10 +41,6 @@
   ::-webkit-scrollbar-thumb {
     background: rgba(156, 163, 175, 0.25);
     border-radius: 9999px;
-  }
-  
-  .dark ::-webkit-scrollbar-thumb {
-    background: rgba(156, 163, 175, 0.15);
   }
   
   ::-webkit-scrollbar-thumb:hover {
@@ -94,12 +75,6 @@ body {
     #ffffff;
 }
 
-.dark .gemini-stage {
-  background:
-    radial-gradient(circle at 50% 54%, rgba(42, 92, 139, 0.42) 0%, rgba(20, 43, 67, 0.34) 34%, rgba(2, 6, 23, 0.98) 74%),
-    #020617;
-}
-
 .gemini-prompt-shell {
   max-width: min(825px, calc(100vw - 40px));
 }
@@ -125,43 +100,6 @@ body {
     0 10px 24px rgba(59, 130, 246, 0.12),
     0 0 18px rgba(66, 133, 244, 0.22);
   animation: novaBorderSweep 3.2s linear infinite;
-}
-
-.nova-input-glow::before {
-  content: "";
-  position: absolute;
-  inset: -3px;
-  z-index: -1;
-  border-radius: inherit;
-  background: conic-gradient(
-    from var(--nova-glow-angle, 0deg),
-    transparent 0deg,
-    rgba(66, 133, 244, 0.42) 42deg,
-    rgba(52, 168, 83, 0.34) 88deg,
-    rgba(251, 188, 4, 0.34) 132deg,
-    rgba(234, 67, 53, 0.38) 178deg,
-    transparent 230deg
-  );
-  filter: blur(10px);
-  opacity: 0.7;
-  animation: novaBorderSweep 3.2s linear infinite;
-}
-
-.dark .nova-input-glow {
-  background-color: #0f172a;
-  background:
-    linear-gradient(#0f172a, #0f172a) padding-box,
-    conic-gradient(
-      from var(--nova-glow-angle, 0deg),
-      rgba(96, 165, 250, 0.95),
-      rgba(74, 222, 128, 0.82),
-      rgba(250, 204, 21, 0.9),
-      rgba(248, 113, 113, 0.9),
-      rgba(96, 165, 250, 0.95)
-    ) border-box;
-  box-shadow:
-    0 10px 24px rgba(96, 165, 250, 0.15),
-    0 0 18px rgba(96, 165, 250, 0.25);
 }
 
 @property --nova-glow-angle {
@@ -210,10 +148,6 @@ body {
   font-size: 0.85em;
 }
 
-.dark .markdown-body code {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
 .markdown-body pre {
   margin-top: 0.75rem;
   margin-bottom: 0.75rem;
@@ -242,10 +176,6 @@ body {
   margin: 0.75rem 0;
 }
 
-.dark .markdown-body blockquote {
-  color: #9ca3af;
-}
-
 .markdown-body table {
   width: 100%;
   border-collapse: collapse;
@@ -262,10 +192,6 @@ body {
   text-align: left;
 }
 
-.dark .markdown-body th, .dark .markdown-body td {
-  border-color: rgba(255, 255, 255, 0.12);
-}
-
 .markdown-body th {
   background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(147, 51, 234, 0.08));
   font-weight: 600;
@@ -275,23 +201,10 @@ body {
   letter-spacing: 0.05em;
 }
 
-.dark .markdown-body th {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(147, 51, 234, 0.15));
-  color: #e2e8f0;
-}
-
 .markdown-body tr:nth-child(even) {
   background-color: rgba(248, 250, 252, 0.5);
 }
 
-.dark .markdown-body tr:nth-child(even) {
-  background-color: rgba(30, 41, 59, 0.3);
-}
-
 .markdown-body tr:hover {
   background-color: rgba(59, 130, 246, 0.05);
-}
-
-.dark .markdown-body tr:hover {
-  background-color: rgba(59, 130, 246, 0.1);
 }

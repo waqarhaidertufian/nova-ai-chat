@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import {
   ChevronDown,
+  Check,
+  Copy,
   FileText,
   Mic,
   MicOff,
@@ -13,6 +15,8 @@ import { ModelId, ModelConfig } from "../types";
 import { AnimatePresence, motion } from "motion/react";
 
 interface HomeViewProps {
+  promptInput: string;
+  setPromptInput: (value: string) => void;
   onSendMessage: (content: string, attachment?: any) => void;
   selectedModel: ModelId;
   onSelectModel: (model: ModelId) => void;
@@ -32,18 +36,28 @@ const MODELS: ModelConfig[] = [
 ];
 
 export default function HomeView({
+  promptInput,
+  setPromptInput,
   onSendMessage,
   selectedModel,
   onSelectModel,
   isListening = false,
   onToggleListen
 }: HomeViewProps) {
-  const [promptInput, setPromptInput] = useState("");
   const [showModelDropdown, setShowModelDropdown] = useState(false);
   const [attachment, setAttachment] = useState<{ name: string; type: string; size: number; base64?: string } | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isInputCopied, setIsInputCopied] = useState(false);
 
   const activeModel = MODELS.find(model => model.id === selectedModel) || MODELS[0];
+
+  const handleCopyInput = () => {
+    if (promptInput) {
+      navigator.clipboard.writeText(promptInput);
+      setIsInputCopied(true);
+      setTimeout(() => setIsInputCopied(false), 2000);
+    }
+  };
 
   const handleSend = () => {
     if (!promptInput.trim() && !attachment) return;
@@ -141,8 +155,8 @@ export default function HomeView({
             )}
           </AnimatePresence>
 
-          <div className="gemini-prompt-shell flex min-h-[80px] w-full items-center gap-4 rounded-full bg-white px-6 shadow-[0_8px_22px_rgba(60,120,180,0.14)] ring-1 ring-slate-100/80 dark:bg-slate-900 dark:ring-slate-800">
-            <label className="grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-full text-black transition hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-800" title="Attach file">
+          <div className="gemini-prompt-shell relative flex min-h-[80px] w-full items-center gap-4 rounded-full bg-white px-6 shadow-[0_8px_22px_rgba(60,120,180,0.14)] ring-1 ring-slate-100/80">
+            <label className="grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-full text-black transition hover:bg-slate-100" title="Attach file">
               <input
                 type="file"
                 onChange={handleFileUpload}
@@ -153,19 +167,19 @@ export default function HomeView({
             </label>
 
             <textarea
-              id="prompt-textarea"
+              id="home-prompt-textarea"
               rows={1}
               value={promptInput}
               onChange={(e) => setPromptInput(e.target.value)}
               onKeyDown={handleKeyPress}
               placeholder="Ask Nova"
-              className="max-h-28 min-h-10 flex-1 resize-none bg-transparent py-3 text-[20px] leading-10 text-slate-800 outline-none placeholder:text-[#5f6368] dark:text-slate-100 dark:placeholder:text-slate-400"
+              className="max-h-28 min-h-10 flex-1 resize-none bg-transparent py-3 text-[20px] leading-10 text-slate-800 outline-none placeholder:text-[#5f6368]"
             />
 
             <div className="relative shrink-0">
               <button
                 onClick={() => setShowModelDropdown(!showModelDropdown)}
-                className="flex items-center gap-2 rounded-full px-3 py-2 text-[17px] font-medium text-[#202124] transition hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-800"
+                className="flex items-center gap-2 rounded-full px-3 py-2 text-[17px] font-medium text-[#202124] transition hover:bg-slate-100"
               >
                 <span>{activeModel.name}</span>
                 <ChevronDown size={18} className={`transition ${showModelDropdown ? "rotate-180" : ""}`} />
@@ -177,7 +191,7 @@ export default function HomeView({
                     initial={{ opacity: 0, y: 8, scale: 0.98 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 8, scale: 0.98 }}
-                    className="absolute right-0 top-11 z-40 max-h-[260px] w-56 overflow-y-auto rounded-2xl border border-slate-100 bg-white p-1.5 text-left shadow-2xl shadow-slate-200/70 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/30"
+                    className="absolute right-0 top-11 z-40 max-h-[260px] w-56 overflow-y-auto rounded-2xl border border-slate-100 bg-white p-1.5 text-left shadow-2xl shadow-slate-200/70"
                   >
                     {MODELS.map(model => (
                       <button
@@ -188,12 +202,12 @@ export default function HomeView({
                         }}
                         className={`w-full rounded-xl px-2.5 py-2 text-left transition ${
                           selectedModel === model.id
-                            ? "bg-sky-50 text-sky-900 dark:bg-sky-950/50 dark:text-sky-100"
-                            : "text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800"
+                            ? "bg-sky-50 text-sky-900"
+                            : "text-slate-700 hover:bg-slate-50"
                         }`}
                       >
                         <span className="block text-[13px] font-semibold leading-tight">{model.name}</span>
-                        <span className="block text-[11px] leading-snug text-slate-500 dark:text-slate-400">{model.provider} - {model.description}</span>
+                        <span className="block text-[11px] leading-snug text-slate-500">{model.provider} - {model.description}</span>
                       </button>
                     ))}
                   </motion.div>
@@ -208,7 +222,7 @@ export default function HomeView({
                 className={`grid h-10 w-10 shrink-0 place-items-center rounded-full transition ${
                   isListening
                     ? "bg-red-50 text-red-500"
-                    : "text-black hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-800"
+                    : "text-black hover:bg-slate-100"
                 }`}
               >
                 {isListening ? <MicOff size={22} /> : <Mic size={22} />}

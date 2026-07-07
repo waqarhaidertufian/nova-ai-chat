@@ -1,15 +1,26 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, lazy, Suspense } from "react";
+import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import HomeView from "./components/HomeView";
 import ChatView from "./components/ChatView";
 import SettingsModal from "./components/SettingsModal";
 import AuthModal from "./components/AuthModal";
 import PricingModal from "./components/PricingModal";
+import { ToastContainer } from "./components/Toast";
 import { ChatSession, Message, ModelId, FileAttachment } from "./types";
 import { RefreshCw, Sparkles, X, AlertCircle, FileText, Check, Download, Layers, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { supabase } from "./lib/supabase";
 import { createCheckoutSession } from "./lib/stripe";
+import { useStore } from "./store/useStore";
+
+// Lazy load pages for code splitting
+const ImagesPage = lazy(() => import("./pages/ImagesPage"));
+const LibraryPage = lazy(() => import("./pages/LibraryPage"));
+const NotebooksPage = lazy(() => import("./pages/NotebooksPage"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const SubscriptionPage = lazy(() => import("./pages/SubscriptionPage"));
 
 const INITIAL_SYSTEM_PROMPT = "You are Nova, a premium AI assistant with magnificent reasoning, coding, and writing abilities. Respond precisely with elegant markdown structures.";
 
@@ -40,37 +51,42 @@ function NovaMark({ className = "h-5 w-5" }: { className?: string }) {
   );
 }
 
-export default function App() {
-  // Session list loaded/saved from localStorage
-  const [sessions, setSessions] = useState<ChatSession[]>(() => {
-    const saved = localStorage.getItem("nova_sessions");
-    return saved ? JSON.parse(saved) : [];
-  });
+function AppContent() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Use Zustand store
+  const sessions = useStore((state) => state.sessions);
+  const setSessions = useStore((state) => state.setSessions);
+  const activeSessionId = useStore((state) => state.activeSessionId);
+  const setActiveSessionId = useStore((state) => state.setActiveSessionId);
+  const selectedModel = useStore((state) => state.selectedModel);
+  const setSelectedModel = useStore((state) => state.setSelectedModel);
+  const systemPrompt = useStore((state) => state.systemPrompt);
+  const setSystemPrompt = useStore((state) => state.setSystemPrompt);
+  const temperature = useStore((state) => state.temperature);
+  const setTemperature = useStore((state) => state.setTemperature);
+  const maxTokens = useStore((state) => state.maxTokens);
+  const setMaxTokens = useStore((state) => state.setMaxTokens);
+  const topP = useStore((state) => state.topP);
+  const setTopP = useStore((state) => state.setTopP);
+  const streamingEnabled = useStore((state) => state.streamingEnabled);
+  const setStreamingEnabled = useStore((state) => state.setStreamingEnabled);
+  const fontSize = useStore((state) => state.fontSize);
+  const setFontSize = useStore((state) => state.setFontSize);
+  const selectedLanguage = useStore((state) => state.selectedLanguage);
+  const setSelectedLanguage = useStore((state) => state.setSelectedLanguage);
+  const addMessageToSession = useStore((state) => state.addMessageToSession);
+  const updateMessageInSession = useStore((state) => state.updateMessageInSession);
+  const deleteMessageFromSession = useStore((state) => state.deleteMessageFromSession);
+  const sidebarCollapsed = useStore((state) => state.sidebarCollapsed);
+  const setSidebarCollapsed = useStore((state) => state.setSidebarCollapsed);
+  const theme = useStore((state) => state.theme);
+  const toasts = useStore((state) => state.toasts);
+  const removeToast = useStore((state) => state.removeToast);
 
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(() => {
-    return localStorage.getItem("nova_active_id") || null;
-  });
-
-  const [selectedModel, setSelectedModel] = useState<ModelId>(() => {
-    return (localStorage.getItem("nova_selected_model") as ModelId) || "gemini";
-  });
-
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
-    const saved = localStorage.getItem("nova_dark_mode");
-    return saved ? JSON.parse(saved) : false;
-  });
-
-  // Settings
+  // Settings modal state
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [systemPrompt, setSystemPrompt] = useState(() => {
-    return localStorage.getItem("nova_system_prompt") || INITIAL_SYSTEM_PROMPT;
-  });
-  const [temperature, setTemperature] = useState(0.7);
-  const [maxTokens, setMaxTokens] = useState(2048);
-  const [topP, setTopP] = useState(0.9);
-  const [streamingEnabled, setStreamingEnabled] = useState(true);
-  const [fontSize, setFontSize] = useState<"sm" | "md" | "lg">("md");
-  const [selectedLanguage, setSelectedLanguage] = useState("English");
 
   // Export panel status
   const [isExportOpen, setIsExportOpen] = useState(false);
@@ -80,6 +96,7 @@ export default function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [speechRecognition, setSpeechRecognition] = useState<any>(null);
+  const [promptInput, setPromptInput] = useState("");
   const [errorMessage, setErrorMessage] = useState<{ type: string; details: string } | null>(null);
 
   // Authentication
@@ -138,20 +155,11 @@ export default function App() {
     }
   }, [activeSessionId]);
 
-  // Sync dark mode class with DOM element
-  useEffect(() => {
-    const root = window.document.documentElement;
-    if (isDarkMode) {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
-    localStorage.setItem("nova_dark_mode", JSON.stringify(isDarkMode));
-  }, [isDarkMode]);
-
   // Speech Recognition hook setup
   useEffect(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    console.log('Speech Recognition API available:', !!SpeechRecognition);
+    
     if (SpeechRecognition) {
       const rec = new SpeechRecognition();
       rec.continuous = false;
@@ -159,55 +167,128 @@ export default function App() {
       rec.lang = "en-US";
       
       rec.onresult = (e: any) => {
+        console.log('Speech recognition result:', e);
         const transcript = e.results[0][0].transcript;
+        console.log('Transcript:', transcript);
         const textarea = document.getElementById("prompt-textarea") as HTMLTextAreaElement;
         if (textarea) {
-          textarea.value = (textarea.value + " " + transcript).trim();
+          const currentValue = textarea.value;
+          const newValue = (currentValue + " " + transcript).trim();
+          textarea.value = newValue;
           textarea.focus();
-          // dispatch change event manually to update react input state
+          // dispatch input event to trigger React state update
           const event = new Event('input', { bubbles: true });
           textarea.dispatchEvent(event);
         }
         setIsListening(false);
       };
 
-      rec.onerror = () => {
+      rec.onerror = (e: any) => {
+        console.error('Speech recognition error:', e.error, e);
         setIsListening(false);
       };
 
       rec.onend = () => {
+        console.log('Speech recognition ended');
         setIsListening(false);
       };
 
+      rec.onstart = () => {
+        console.log('Speech recognition started');
+      };
+
       setSpeechRecognition(rec);
+      console.log('Speech recognition initialized');
+    } else {
+      console.warn('Speech recognition not supported in this browser');
     }
   }, []);
 
-  const handleToggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
-  };
-
   const handleToggleListen = () => {
-    if (!speechRecognition) {
+    console.log('Toggle listen clicked, isListening:', isListening);
+    
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
       alert("Web Speech recognition is not supported in this browser. Please try standard text input.");
       return;
     }
+
     if (isListening) {
-      speechRecognition.stop();
+      console.log('Stopping speech recognition');
       setIsListening(false);
+      if (speechRecognition) {
+        speechRecognition.stop();
+      }
     } else {
+      console.log('Starting speech recognition');
       setIsListening(true);
-      speechRecognition.start();
+      
+      // Create new instance each time to avoid state issues
+      const rec = new SpeechRecognition();
+      rec.continuous = false;
+      rec.interimResults = false;
+      rec.lang = "en-US";
+      
+      rec.onresult = (e: any) => {
+        console.log('Speech recognition result:', e);
+        const transcript = e.results[0][0].transcript;
+        console.log('Transcript:', transcript);
+        setPromptInput((prev) => (prev + " " + transcript).trim());
+        setIsListening(false);
+      };
+
+      rec.onerror = (e: any) => {
+        console.error('Speech recognition error:', e.error, e);
+        setIsListening(false);
+      };
+
+      rec.onend = () => {
+        console.log('Speech recognition ended');
+        setIsListening(false);
+      };
+
+      rec.onstart = () => {
+        console.log('Speech recognition started');
+      };
+
+      setSpeechRecognition(rec);
+      rec.start();
     }
   };
 
   const handleNewChat = () => {
     setActiveSessionId(null);
+    navigate('/');
+  };
+
+  const handleNavigateToImages = () => {
+    navigate('/images');
+  };
+
+  const handleNavigateToLibrary = () => {
+    navigate('/library');
+  };
+
+  const handleNavigateToNotebooks = () => {
+    navigate('/notebooks');
+  };
+
+  const handleNavigateToSettings = () => {
+    navigate('/settings');
+  };
+
+  const handleNavigateToProfile = () => {
+    navigate('/profile');
+  };
+
+  const handleNavigateToSubscription = () => {
+    navigate('/subscription');
   };
 
   const handleSelectSession = (id: string) => {
     setActiveSessionId(id);
     setErrorMessage(null);
+    navigate(`/chat/${id}`);
   };
 
   const handleDeleteSession = (id: string, e: React.MouseEvent) => {
@@ -227,6 +308,8 @@ export default function App() {
       return s;
     });
     setSessions(updated);
+    // Also update in store
+    useStore.getState().updateSession(id, { title: newTitle });
   };
 
   const handleTogglePin = (id: string, e: React.MouseEvent) => {
@@ -238,6 +321,7 @@ export default function App() {
       return s;
     });
     setSessions(updated);
+    useStore.getState().updateSession(id, { isPinned: !sessions.find(s => s.id === id)?.isPinned });
   };
 
   const handleToggleFavorite = (id: string, e: React.MouseEvent) => {
@@ -249,13 +333,13 @@ export default function App() {
       return s;
     });
     setSessions(updated);
+    useStore.getState().updateSession(id, { isFavorite: !sessions.find(s => s.id === id)?.isFavorite });
   };
 
   // Central Send Message Logic (Full-Stack server bridge)
   const handleSendMessage = async (content: string, attachment?: FileAttachment) => {
     setErrorMessage(null);
     let currentSessionId = activeSessionId;
-    let updatedSessions = [...sessions];
 
     // 1. Create session if none is active
     if (!currentSessionId) {
@@ -274,13 +358,10 @@ export default function App() {
         maxTokens,
         topP
       };
-      updatedSessions.unshift(newSession);
+      useStore.getState().addSession(newSession);
       currentSessionId = newSession.id;
       setActiveSessionId(newSession.id);
     }
-
-    const targetSession = updatedSessions.find(s => s.id === currentSessionId);
-    if (!targetSession) return;
 
     // 2. Add User Message
     const userMsg: Message = {
@@ -291,13 +372,22 @@ export default function App() {
       attachment: attachment
     };
 
-    targetSession.messages.push(userMsg);
-    targetSession.updatedAt = new Date().toISOString();
-    setSessions(updatedSessions);
+    useStore.getState().addMessageToSession(currentSessionId, userMsg);
+    setPromptInput("");
     setIsGenerating(true);
+    
+    // Navigate to chat route if not already there
+    if (location.pathname !== `/chat/${currentSessionId}`) {
+      navigate(`/chat/${currentSessionId}`);
+    }
 
     try {
-      // 3. Trigger Express Backend Route proxying Gemini API
+      // Get the absolute latest data from the store
+      const latestSessions = useStore.getState().sessions;
+      const targetSession = latestSessions.find(s => s.id === currentSessionId);
+      if (!targetSession) return;
+
+      // 3. Single backend endpoint — AI Router handles all providers
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -308,6 +398,7 @@ export default function App() {
           maxTokens: targetSession.maxTokens,
           topP: targetSession.topP,
           model: targetSession.model,
+          stream: streamingEnabled,
           fileData: attachment ? { mimeType: attachment.mimeType, data: attachment.base64Data || (attachment as any).base64 } : undefined
         })
       });
@@ -317,60 +408,70 @@ export default function App() {
         throw new Error(errorData.message || `Server error: ${response.status}`);
       }
 
-      const data = await response.json();
-      const textResponse = data.response;
-      const responseStats = data.stats;
+      const contentType = response.headers.get("content-type") ?? "";
 
-      // 4. Handle Simulated Fluid Response Streaming
-      if (streamingEnabled) {
+      // 4. Server-sent events streaming from AI Router
+      if (streamingEnabled && contentType.includes("text/event-stream") && response.body) {
         const assistantMsgId = "msg_stream_" + Date.now();
-        const words = textResponse.split(" ");
-        let currentWordIndex = 0;
         let displayedText = "";
+        let responseStats: Message["stats"];
 
         const streamMessage: Message = {
           id: assistantMsgId,
           role: "assistant",
           content: "",
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          stats: responseStats
         };
 
-        // Inject initial blank message
-        targetSession.messages.push(streamMessage);
-        setSessions([...updatedSessions]);
+        useStore.getState().addMessageToSession(currentSessionId, streamMessage);
 
-        const streamInterval = setInterval(() => {
-          if (currentWordIndex < words.length) {
-            displayedText += (currentWordIndex === 0 ? "" : " ") + words[currentWordIndex];
-            
-            // Edit in place
-            setSessions(prevSessions => {
-              return prevSessions.map(s => {
-                if (s.id === currentSessionId) {
-                  return {
-                    ...s,
-                    messages: s.messages.map(m => {
-                      if (m.id === assistantMsgId) {
-                        return { ...m, content: displayedText };
-                      }
-                      return m;
-                    })
-                  };
-                }
-                return s;
-              });
-            });
-            
-            currentWordIndex++;
-          } else {
-            clearInterval(streamInterval);
-            setIsGenerating(false);
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const events = buffer.split("\n\n");
+          buffer = events.pop() ?? "";
+
+          for (const eventBlock of events) {
+            const lines = eventBlock.split("\n");
+            let eventType = "message";
+            let dataLine = "";
+
+            for (const line of lines) {
+              if (line.startsWith("event:")) eventType = line.slice(6).trim();
+              if (line.startsWith("data:")) dataLine = line.slice(5).trim();
+            }
+
+            if (eventType === "error") {
+              const errPayload = JSON.parse(dataLine || "{}");
+              throw new Error(errPayload.message || "Stream failed");
+            }
+
+            if (eventType === "chunk" && dataLine) {
+              const payload = JSON.parse(dataLine);
+              displayedText += payload.content ?? "";
+              useStore.getState().updateMessageInSession(currentSessionId, assistantMsgId, { content: displayedText });
+            }
+
+            if (eventType === "done" && dataLine) {
+              const payload = JSON.parse(dataLine);
+              responseStats = payload.stats;
+            }
           }
-        }, 30); // smooth word rendering velocity
+        }
 
+        useStore.getState().updateMessageInSession(currentSessionId, assistantMsgId, { stats: responseStats });
+        setIsGenerating(false);
       } else {
-        // Direct response without streaming
+        const data = await response.json();
+        const textResponse = data.response ?? data.content;
+        const responseStats = data.stats;
+
         const assistantMsg: Message = {
           id: "msg_" + Date.now(),
           role: "assistant",
@@ -378,8 +479,8 @@ export default function App() {
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           stats: responseStats
         };
-        targetSession.messages.push(assistantMsg);
-        setSessions([...updatedSessions]);
+        
+        useStore.getState().addMessageToSession(currentSessionId, assistantMsg);
         setIsGenerating(false);
       }
 
@@ -408,68 +509,61 @@ export default function App() {
         content: `⚠️ **[${errorType}]**\n\n${explanation}`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
-      targetSession.messages.push(errorMsg);
-      setSessions([...updatedSessions]);
+      
+      useStore.getState().addMessageToSession(currentSessionId, errorMsg);
     }
   };
 
   const handleRegenerate = () => {
-    const targetSession = sessions.find(s => s.id === activeSessionId);
+    const latestSessions = useStore.getState().sessions;
+    const targetSession = latestSessions.find(s => s.id === activeSessionId);
     if (!targetSession || targetSession.messages.length === 0) return;
 
     // Delete last assistant message, if any
-    const lastMsg = targetSession.messages[targetSession.messages.length - 1];
+    let messages = [...targetSession.messages];
+    const lastMsg = messages[messages.length - 1];
     if (lastMsg.role === "assistant") {
-      targetSession.messages.pop();
+      messages.pop();
     }
 
     // Capture last user prompt to retry
-    const lastUserMsg = targetSession.messages[targetSession.messages.length - 1];
+    const lastUserMsg = messages[messages.length - 1];
     if (lastUserMsg && lastUserMsg.role === "user") {
-      // pop user message so handleSendMessage can re-inject clean
-      targetSession.messages.pop();
+      messages.pop();
+      // Update session messages in store
+      useStore.getState().updateSession(activeSessionId!, { messages });
       handleSendMessage(lastUserMsg.content, lastUserMsg.attachment);
     }
   };
 
   const handleEditMessage = (messageId: string, newContent: string) => {
-    const updated = sessions.map(s => {
-      if (s.id === activeSessionId) {
-        const msgIndex = s.messages.findIndex(m => m.id === messageId);
-        if (msgIndex !== -1) {
-          const newMessages = [...s.messages];
-          newMessages[msgIndex] = { ...newMessages[msgIndex], content: newContent };
-          
-          // Truncate everything after this edited message so the conversation flows naturally from here
-          const finalMessages = newMessages.slice(0, msgIndex + 1);
-          
-          // Trigger regeneration automatically for user edits
-          setTimeout(() => {
-            const lastUser = finalMessages[finalMessages.length - 1];
-            s.messages = finalMessages.slice(0, -1); // remove temporary to avoid doubling
-            handleSendMessage(lastUser.content, lastUser.attachment);
-          }, 50);
+    const latestSessions = useStore.getState().sessions;
+    const targetSession = latestSessions.find(s => s.id === activeSessionId);
+    if (!targetSession) return;
 
-          return { ...s, messages: finalMessages, updatedAt: new Date().toISOString() };
-        }
+    const msgIndex = targetSession.messages.findIndex(m => m.id === messageId);
+    if (msgIndex !== -1) {
+      const newMessages = [...targetSession.messages];
+      newMessages[msgIndex] = { ...newMessages[msgIndex], content: newContent };
+      
+      // Truncate everything after this edited message so the conversation flows naturally from here
+      const finalMessages = newMessages.slice(0, msgIndex + 1);
+      
+      // Update session in store
+      useStore.getState().updateSession(activeSessionId!, { messages: finalMessages });
+
+      // Trigger regeneration automatically for user edits
+      const lastUser = finalMessages[finalMessages.length - 1];
+      if (lastUser && lastUser.role === "user") {
+        const prefixMessages = finalMessages.slice(0, -1);
+        useStore.getState().updateSession(activeSessionId!, { messages: prefixMessages });
+        handleSendMessage(lastUser.content, lastUser.attachment);
       }
-      return s;
-    });
-    setSessions(updated);
+    }
   };
 
   const handleDeleteMessage = (messageId: string) => {
-    const updated = sessions.map(s => {
-      if (s.id === activeSessionId) {
-        return {
-          ...s,
-          messages: s.messages.filter(m => m.id !== messageId),
-          updatedAt: new Date().toISOString()
-        };
-      }
-      return s;
-    });
-    setSessions(updated);
+    deleteMessageFromSession(activeSessionId!, messageId);
   };
 
   const handleStopGeneration = () => {
@@ -527,26 +621,39 @@ export default function App() {
 
   const activeSession = sessions.find(s => s.id === activeSessionId);
 
+  // Check if sidebar should be shown
+  const showSidebar = !location.pathname.startsWith('/settings') && 
+                      !location.pathname.startsWith('/profile') && 
+                      !location.pathname.startsWith('/subscription') &&
+                      !location.pathname.startsWith('/notebooks');
+
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-gray-50/20 dark:bg-slate-950 font-sans transition-colors duration-300">
+    <div className={`flex h-screen w-screen overflow-hidden bg-gray-50 font-sans transition-colors duration-300 ${theme === 'dark' ? 'dark' : ''}`}>
       {/* Sidebar navigation */}
-      <Sidebar
-        sessions={sessions}
-        activeSessionId={activeSessionId}
-        isDarkMode={isDarkMode}
-        onToggleTheme={handleToggleTheme}
-        onNewChat={handleNewChat}
-        onSelectSession={handleSelectSession}
-        onDeleteSession={handleDeleteSession}
-        onRenameSession={handleRenameSession}
-        onTogglePin={handleTogglePin}
-        onToggleFavorite={handleToggleFavorite}
-        onOpenSettings={() => setIsSettingsOpen(true)}
-        onOpenExport={() => setIsExportOpen(true)}
-        user={user}
-        onOpenAuth={() => setIsAuthOpen(true)}
-        onLogout={handleLogout}
-      />
+      {showSidebar && (
+        <Sidebar
+          sessions={sessions}
+          activeSessionId={activeSessionId}
+          onNewChat={handleNewChat}
+          onSelectSession={handleSelectSession}
+          onDeleteSession={handleDeleteSession}
+          onRenameSession={handleRenameSession}
+          onTogglePin={handleTogglePin}
+          onToggleFavorite={handleToggleFavorite}
+          onOpenSettings={handleNavigateToSettings}
+          onOpenExport={() => setIsExportOpen(true)}
+          onNavigateToImages={handleNavigateToImages}
+          onNavigateToLibrary={handleNavigateToLibrary}
+          onNavigateToNotebooks={handleNavigateToNotebooks}
+          onNavigateToProfile={handleNavigateToProfile}
+          onNavigateToSubscription={handleNavigateToSubscription}
+          user={user}
+          onOpenAuth={() => setIsAuthOpen(true)}
+          onLogout={handleLogout}
+          isCollapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        />
+      )}
 
       {/* Main Core Stage */}
       <div className="flex-1 h-screen flex flex-col overflow-hidden relative" id="stage-panel">
@@ -595,28 +702,94 @@ export default function App() {
           )}
         </AnimatePresence>
 
-        {activeSessionId && activeSession ? (
-          <ChatView 
-            session={activeSession}
-            onSendMessage={handleSendMessage}
-            onRegenerate={handleRegenerate}
-            onEditMessage={handleEditMessage}
-            onDeleteMessage={handleDeleteMessage}
-            isGenerating={isGenerating}
-            onStopGeneration={handleStopGeneration}
-            isListening={isListening}
-            onToggleListen={handleToggleListen}
-            fontSize={fontSize}
-          />
-        ) : (
-          <HomeView 
-            onSendMessage={handleSendMessage}
-            selectedModel={selectedModel}
-            onSelectModel={setSelectedModel}
-            isListening={isListening}
-            onToggleListen={handleToggleListen}
-          />
-        )}
+        <Routes>
+          <Route path="/" element={
+            activeSessionId && activeSession ? (
+              <ChatView 
+                session={activeSession}
+                promptInput={promptInput}
+                setPromptInput={setPromptInput}
+                onSendMessage={handleSendMessage}
+                onRegenerate={handleRegenerate}
+                onEditMessage={handleEditMessage}
+                onDeleteMessage={handleDeleteMessage}
+                isGenerating={isGenerating}
+                onStopGeneration={handleStopGeneration}
+                isListening={isListening}
+                onToggleListen={handleToggleListen}
+                fontSize={fontSize}
+              />
+            ) : (
+              <HomeView 
+                promptInput={promptInput}
+                setPromptInput={setPromptInput}
+                onSendMessage={handleSendMessage}
+                selectedModel={selectedModel}
+                onSelectModel={setSelectedModel}
+                isListening={isListening}
+                onToggleListen={handleToggleListen}
+              />
+            )
+          } />
+          <Route path="/chat/:id" element={
+            activeSessionId && activeSession ? (
+              <ChatView 
+                session={activeSession}
+                promptInput={promptInput}
+                setPromptInput={setPromptInput}
+                onSendMessage={handleSendMessage}
+                onRegenerate={handleRegenerate}
+                onEditMessage={handleEditMessage}
+                onDeleteMessage={handleDeleteMessage}
+                isGenerating={isGenerating}
+                onStopGeneration={handleStopGeneration}
+                isListening={isListening}
+                onToggleListen={handleToggleListen}
+                fontSize={fontSize}
+              />
+            ) : (
+              <HomeView 
+                promptInput={promptInput}
+                setPromptInput={setPromptInput}
+                onSendMessage={handleSendMessage}
+                selectedModel={selectedModel}
+                onSelectModel={setSelectedModel}
+                isListening={isListening}
+                onToggleListen={handleToggleListen}
+              />
+            )
+          } />
+          <Route path="/images" element={
+            <Suspense fallback={<div className="flex items-center justify-center h-full"><RefreshCw className="animate-spin" /></div>}>
+              <ImagesPage />
+            </Suspense>
+          } />
+          <Route path="/library" element={
+            <Suspense fallback={<div className="flex items-center justify-center h-full"><RefreshCw className="animate-spin" /></div>}>
+              <LibraryPage />
+            </Suspense>
+          } />
+          <Route path="/notebooks" element={
+            <Suspense fallback={<div className="flex items-center justify-center h-full"><RefreshCw className="animate-spin" /></div>}>
+              <NotebooksPage />
+            </Suspense>
+          } />
+          <Route path="/settings" element={
+            <Suspense fallback={<div className="flex items-center justify-center h-full"><RefreshCw className="animate-spin" /></div>}>
+              <SettingsPage />
+            </Suspense>
+          } />
+          <Route path="/profile" element={
+            <Suspense fallback={<div className="flex items-center justify-center h-full"><RefreshCw className="animate-spin" /></div>}>
+              <ProfilePage />
+            </Suspense>
+          } />
+          <Route path="/subscription" element={
+            <Suspense fallback={<div className="flex items-center justify-center h-full"><RefreshCw className="animate-spin" /></div>}>
+              <SubscriptionPage />
+            </Suspense>
+          } />
+        </Routes>
       </div>
 
       {/* Global Settings Modal */}
@@ -628,7 +801,6 @@ export default function App() {
             systemPrompt={systemPrompt}
             onChangeSystemPrompt={(p) => {
               setSystemPrompt(p);
-              localStorage.setItem("nova_system_prompt", p);
             }}
             temperature={temperature}
             onChangeTemperature={setTemperature}
@@ -642,6 +814,8 @@ export default function App() {
             onChangeFontSize={setFontSize}
             selectedLanguage={selectedLanguage}
             onChangeLanguage={setSelectedLanguage}
+            user={user}
+            onLogout={handleLogout}
           />
         )}
       </AnimatePresence>
@@ -763,6 +937,15 @@ export default function App() {
           />
         )}
       </AnimatePresence>
+
+      {/* Toast Container */}
+      <ToastContainer toasts={toasts} onClose={removeToast} />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AppContent />
   );
 }

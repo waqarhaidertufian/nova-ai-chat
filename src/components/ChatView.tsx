@@ -23,6 +23,8 @@ import Markdown from "react-markdown";
 
 interface ChatViewProps {
   session: ChatSession;
+  promptInput: string;
+  setPromptInput: (value: string) => void;
   onSendMessage: (content: string, attachment?: any) => void;
   onRegenerate: () => void;
   onEditMessage: (messageId: string, newContent: string) => void;
@@ -79,6 +81,8 @@ function NovaChatLogo({ spinning = false }: { spinning?: boolean }) {
 
 export default function ChatView({
   session,
+  promptInput,
+  setPromptInput,
   onSendMessage,
   onRegenerate,
   onEditMessage,
@@ -89,7 +93,6 @@ export default function ChatView({
   onToggleListen,
   fontSize = "md"
 }: ChatViewProps) {
-  const [promptInput, setPromptInput] = useState("");
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
@@ -97,12 +100,21 @@ export default function ChatView({
   const [attachment, setAttachment] = useState<{ name: string; type: string; size: number; base64?: string } | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
+  const [isInputCopied, setIsInputCopied] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const activeModel = MODELS.find(m => m.id === session.model) || MODELS[0];
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handleCopyInput = () => {
+    if (promptInput) {
+      navigator.clipboard.writeText(promptInput);
+      setIsInputCopied(true);
+      setTimeout(() => setIsInputCopied(false), 2000);
+    }
   };
 
   useEffect(() => {
@@ -209,8 +221,8 @@ export default function ChatView({
   }[fontSize];
 
   return (
-    <div 
-      className={`flex-1 flex flex-col justify-between overflow-hidden relative h-full bg-white dark:bg-slate-950 ${isDragOver ? 'border-2 border-dashed border-blue-500 bg-blue-50/10' : ''}`}
+    <div
+      className={`flex-1 flex flex-col justify-between overflow-hidden relative h-full bg-white ${isDragOver ? 'border-2 border-dashed border-blue-500 bg-blue-50/10' : ''}`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -223,7 +235,7 @@ export default function ChatView({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-blue-500/5 dark:bg-blue-500/10 backdrop-blur-sm z-50 flex flex-col items-center justify-center text-blue-600 dark:text-blue-400 pointer-events-none"
+            className="absolute inset-0 bg-blue-500/5 bg-blue-500/10 backdrop-blur-sm z-50 flex flex-col items-center justify-center text-blue-600 text-blue-400 pointer-events-none"
           >
             <Sparkles size={48} className="animate-bounce mb-3" />
             <p className="font-display font-semibold text-xl">Drop files to upload context</p>
@@ -262,7 +274,7 @@ export default function ChatView({
                       <button
                         onClick={() => handleCopy(msg.content, msg.id)}
                         title="Copy message"
-                        className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-400 hover:text-gray-600 dark:hover:text-white cursor-pointer transition-colors"
+                        className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 cursor-pointer transition-colors"
                       >
                         {copiedMessageId === msg.id ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
                       </button>
@@ -270,7 +282,7 @@ export default function ChatView({
                       <button
                         onClick={() => onEditMessage(msg.id, msg.content)}
                         title="Edit message"
-                        className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-400 hover:text-blue-500 cursor-pointer transition-colors"
+                        className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-blue-500 cursor-pointer transition-colors"
                       >
                         <Pencil size={12} />
                       </button>
@@ -279,10 +291,10 @@ export default function ChatView({
 
                   {/* User File attachment details */}
                   {isUser && msg.attachment && (
-                    <div className="flex items-center gap-2 p-2 rounded-xl bg-gray-50 dark:bg-slate-900 border border-gray-150 dark:border-slate-800/80 max-w-xs mb-1">
+                    <div className="flex items-center gap-2 p-2 rounded-xl bg-gray-50 border border-gray-150 max-w-xs mb-1">
                       <Bookmark size={14} className="text-blue-500 shrink-0" />
                       <div className="truncate">
-                        <p className="text-[11px] font-bold text-gray-700 dark:text-gray-200 truncate leading-snug">{msg.attachment.name}</p>
+                        <p className="text-[11px] font-bold text-gray-700 truncate leading-snug">{msg.attachment.name}</p>
                         <p className="text-[9px] text-gray-400 leading-none">{(msg.attachment.size / 1024).toFixed(1)} KB</p>
                       </div>
                     </div>
@@ -292,8 +304,8 @@ export default function ChatView({
                   <div
                     className={`${
                       isUser
-                        ? 'rounded-2xl p-4 shadow-sm border bg-[#f1f0ee] border-[#f1f0ee] text-[#1f1f1f] shadow-gray-200/40 dark:bg-slate-800 dark:border-slate-800 dark:text-slate-100'
-                        : 'bg-transparent border-none shadow-none p-0 text-gray-800 dark:text-gray-100'
+                        ? 'rounded-2xl p-4 shadow-sm border bg-[#f1f0ee] border-[#f1f0ee] text-[#1f1f1f] shadow-gray-200/40'
+                        : 'bg-transparent border-none shadow-none p-0 text-gray-800'
                     } ${fontSizeClass}`}
                   >
                     {isUser && editingMessageId === msg.id ? (
@@ -302,7 +314,7 @@ export default function ChatView({
                           rows={2}
                           value={editContent}
                           onChange={(e) => setEditContent(e.target.value)}
-                          className="w-full bg-white dark:bg-slate-800 text-gray-800 dark:text-white rounded-lg p-2 text-xs outline-none focus:ring-1 focus:ring-blue-500"
+                          className="w-full bg-white text-gray-800 rounded-lg p-2 text-xs outline-none focus:ring-1 focus:ring-blue-500"
                         />
                         <div className="flex items-center gap-1.5 justify-end">
                           <button 
@@ -313,7 +325,7 @@ export default function ChatView({
                           </button>
                           <button 
                             onClick={() => setEditingMessageId(null)}
-                            className="px-2.5 py-1 rounded bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-200 text-[10px] font-bold cursor-pointer"
+                            className="px-2.5 py-1 rounded bg-gray-200 text-gray-700 text-[10px] font-bold cursor-pointer"
                           >
                             Cancel
                           </button>
@@ -335,7 +347,7 @@ export default function ChatView({
                       <span>{msg.timestamp}</span>
 
                       {msg.stats && (
-                        <div className="flex flex-wrap items-center gap-3 text-gray-400 dark:text-gray-500 border-l border-gray-100 dark:border-slate-800/80 pl-3">
+                        <div className="flex flex-wrap items-center gap-3 text-gray-400 border-l border-gray-100 pl-3">
                           <span className="flex items-center gap-1">
                             <Cpu size={10} />
                             {msg.stats.totalTokens} tokens
@@ -347,7 +359,7 @@ export default function ChatView({
                         <button
                           onClick={() => handleCopy(msg.content, msg.id)}
                           title="Copy message"
-                          className="p-1 rounded hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-400 hover:text-gray-600 dark:hover:text-white cursor-pointer transition-colors"
+                          className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 cursor-pointer transition-colors"
                         >
                           {copiedMessageId === msg.id ? <Check size={11} className="text-green-500" /> : <Copy size={11} />}
                         </button>
@@ -355,7 +367,7 @@ export default function ChatView({
                         <button
                           onClick={() => handleSpeak(msg.content, msg.id)}
                           title={speakingMessageId === msg.id ? "Stop Narration" : "Read Aloud"}
-                          className="p-1 rounded hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-400 hover:text-blue-500 cursor-pointer transition-colors"
+                          className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-blue-500 cursor-pointer transition-colors"
                         >
                           {speakingMessageId === msg.id ? <VolumeX size={11} className="text-red-500" /> : <Volume2 size={11} />}
                         </button>
@@ -364,7 +376,7 @@ export default function ChatView({
                           <button
                             onClick={onRegenerate}
                             title="Regenerate reply"
-                            className="p-1 rounded hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-400 hover:text-blue-500 cursor-pointer transition-colors"
+                            className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-blue-500 cursor-pointer transition-colors"
                           >
                             <RotateCcw size={11} />
                           </button>
@@ -385,7 +397,7 @@ export default function ChatView({
               <NovaChatLogo spinning />
             </div>
             <div className="flex flex-col gap-1.5 max-w-[85%] items-start">
-              <div className="rounded-xl p-2 border border-gray-100 dark:border-slate-800 bg-gray-50/40 dark:bg-slate-900/40 text-gray-800 dark:text-gray-200">
+              <div className="rounded-xl p-2 border border-gray-100 bg-gray-50/40 text-gray-800">
                 <div className="flex items-center gap-1 py-0.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-blue-500 typing-dot"></span>
                   <span className="w-1.5 h-1.5 rounded-full bg-blue-500 typing-dot [animation-delay:0.2s]"></span>
@@ -400,7 +412,7 @@ export default function ChatView({
       </div>
 
       {/* Floating Prompt Input Panel */}
-      <div className="px-4 md:px-8 bg-gray-50/10 dark:bg-slate-950/20 relative z-20">
+      <div className="px-4 md:px-8 bg-gray-50/10 relative z-20">
         <div className="max-w-3xl w-full mx-auto pb-4">
           {/* Active file attachments overlay */}
           <AnimatePresence>
@@ -409,12 +421,12 @@ export default function ChatView({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
-                className="flex items-center justify-between p-2 rounded-xl bg-blue-50/70 dark:bg-slate-900 border border-blue-200/40 dark:border-slate-800 mb-2 max-w-xs"
+                className="flex items-center justify-between p-2 rounded-xl bg-blue-50/70 border border-blue-200/40 mb-2 max-w-xs"
               >
                 <div className="flex items-center gap-2 truncate">
                   <Bookmark size={14} className="text-blue-500 shrink-0" />
                   <div className="truncate">
-                    <p className="text-[11px] font-bold text-gray-700 dark:text-gray-200 truncate leading-snug">{attachment.name}</p>
+                    <p className="text-[11px] font-bold text-gray-700 truncate leading-snug">{attachment.name}</p>
                     <p className="text-[9px] text-gray-400 leading-none">{(attachment.size / 1024).toFixed(1)} KB</p>
                   </div>
                 </div>
@@ -428,17 +440,18 @@ export default function ChatView({
           {/* Form wrapper */}
           <div className="nova-input-glow relative rounded-2xl shadow-lg transition-all">
             <textarea
+              id="prompt-textarea"
               rows={1}
               value={promptInput}
               onChange={(e) => setPromptInput(e.target.value)}
               onKeyDown={handleKeyPress}
               placeholder="Ask Nova"
-              className="w-full resize-none bg-transparent py-3 pl-4 pr-32 text-xs md:text-sm text-gray-800 dark:text-gray-100 focus:outline-none rounded-2xl"
+              className="w-full resize-none bg-transparent py-3 pl-4 pr-32 text-xs md:text-sm text-gray-800 focus:outline-none rounded-2xl"
             />
 
             {/* In-bar actions */}
             <div className="absolute right-3 bottom-2 flex items-center gap-2">
-              <label className="p-1.5 rounded-full text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer transition-all">
+              <label className="p-1.5 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 cursor-pointer transition-all">
                 <input 
                   type="file" 
                   onChange={handleFileUpload} 
@@ -455,7 +468,7 @@ export default function ChatView({
                   className={`p-1.5 rounded-full cursor-pointer transition-all ${
                     isListening 
                       ? "bg-red-500/10 text-red-500 hover:bg-red-500/20" 
-                      : "text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-800"
+                      : "text-gray-400 hover:text-gray-700 hover:bg-gray-100"
                   }`}
                 >
                   <Mic size={14} />
@@ -468,14 +481,14 @@ export default function ChatView({
                 className={`p-2 rounded-full text-white cursor-pointer transition-all ${
                   (promptInput.trim() || attachment)
                     ? "bg-blue-600 hover:bg-blue-700 shadow-md shadow-blue-500/20"
-                    : "bg-gray-150 dark:bg-slate-800 text-gray-300 dark:text-gray-600 cursor-not-allowed"
+                    : "bg-gray-150 text-gray-300 cursor-not-allowed"
                 }`}
               >
                 <Send size={12} />
               </button>
             </div>
           </div>
-          <p className="text-center text-xs text-gray-900 dark:text-gray-100 font-medium mt-3">
+          <p className="text-center text-xs text-gray-900 font-medium mt-3">
             Nova is AI and can make mistakes.
           </p>
         </div>

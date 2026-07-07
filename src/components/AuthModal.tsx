@@ -61,17 +61,17 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
       />
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 15 }}
-        className="relative w-full max-w-md rounded-3xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl overflow-hidden p-8"
+        className="relative w-full max-w-md rounded-3xl border border-gray-100 bg-white shadow-2xl overflow-hidden p-8"
       >
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-1 rounded-full text-gray-400 hover:text-gray-700 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-slate-800 cursor-pointer"
+          className="absolute top-4 right-4 p-1 rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 cursor-pointer"
         >
           <X size={18} />
         </button>
@@ -80,10 +80,10 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mx-auto mb-4">
             <LogIn size={28} className="text-white" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 font-display">
+          <h2 className="text-2xl font-bold text-gray-800 font-display">
             {isLogin ? 'Welcome Back' : 'Create Account'}
           </h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+          <p className="text-sm text-gray-500 mt-2">
             {isLogin ? 'Sign in to continue to Nova' : 'Get started with Nova AI'}
           </p>
         </div>
@@ -91,7 +91,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && (
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-700 dark:text-gray-300">Full Name</label>
+              <label className="text-xs font-bold text-gray-700">Full Name</label>
               <div className="relative">
                 <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
@@ -99,7 +99,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="John Doe"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-100 text-sm outline-none focus:border-blue-500"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-100 bg-white text-gray-800 text-sm outline-none focus:border-blue-500"
                   required
                 />
               </div>
@@ -107,7 +107,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
           )}
 
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-gray-700 dark:text-gray-300">Email</label>
+            <label className="text-xs font-bold text-gray-700">Email</label>
             <div className="relative">
               <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
@@ -115,14 +115,14 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-100 text-sm outline-none focus:border-blue-500"
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-100 bg-white text-gray-800 text-sm outline-none focus:border-blue-500"
                 required
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-gray-700 dark:text-gray-300">Password</label>
+            <label className="text-xs font-bold text-gray-700">Password</label>
             <div className="relative">
               <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
@@ -130,14 +130,14 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-gray-100 dark:border-slate-800 bg-white dark:bg-slate-900 text-gray-800 dark:text-gray-100 text-sm outline-none focus:border-blue-500"
+                className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-gray-100 bg-white text-gray-800 text-sm outline-none focus:border-blue-500"
                 required
                 minLength={6}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
               >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
@@ -145,7 +145,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
           </div>
 
           {error && (
-            <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/40 text-xs text-red-600 dark:text-red-400">
+            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-600">
               {error}
             </div>
           )}
@@ -162,7 +162,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalP
         <div className="mt-6 text-center">
           <button
             onClick={() => setIsLogin(!isLogin)}
-            className="text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer"
+            className="text-sm text-gray-500 hover:text-blue-600 cursor-pointer"
           >
             {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
           </button>

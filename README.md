@@ -7,6 +7,34 @@
 
 A modern, full-featured AI chat application built with React, TypeScript, and integrated with Supabase for authentication and database, Stripe for payments, and Gemini AI for responses.
 
+## Demo & Screenshots
+
+### 🎥 Project Demo Video
+You can watch the full walk-through and features demonstration video here:
+* [Google Drive Project Demo Video](https://drive.google.com/drive/u/1/folders/1XOq3-UWOdplY5JuI6mV1M2Bw6eKCOMgb)
+
+### 📸 Application Screenshots
+
+#### 1. Library Page
+Shows saved and recent conversations, organized neatly in card layouts.
+![Library Page](assets/screenshot_library.png)
+
+#### 2. Roman Urdu AI Chat
+Demonstrates advanced language modeling and prompt engineering responding fluently in Roman Urdu.
+![Roman Urdu AI Chat](assets/screenshot_chat_roman_urdu.png)
+
+#### 3. General Conversation
+Displays a clean chat interface with message status and metadata.
+![General Conversation](assets/screenshot_chat_general.png)
+
+#### 4. Chat View Interface
+Shows message history and the prompt input box with smooth styling.
+![Clean Chat layout](assets/screenshot_chat_main.png)
+
+#### 5. Technical Assistant Capabilities
+Demonstrates the assistant providing deep technical reasoning (e.g. computer vision optimization advice).
+![Technical Chat](assets/screenshot_chat_technical.png)
+
 ## About Me
 
 **Name:** Waqar Haider
